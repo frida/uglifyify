@@ -201,3 +201,22 @@ test('uglifyify: transform is stable', function(t) {
     }))
   }))
 })
+
+test('uglifyify: supports ignoring files', function(t) {
+  var src  = path.join(__dirname, 'fixture.js')
+  var orig = fs.readFileSync(src, 'utf8')
+
+  t.plan(3)
+  check('**/test/fixture.js', t.equal)
+  check(['**/test/fixture.js'], t.equal)
+  check(['x', 'y'], t.notEqual)
+
+  function check(ignores, assert) {
+    fs.createReadStream(src)
+      .pipe(uglifyify(src, { ignore: ignores }))
+      .pipe(bl(function(err, data) {
+        if (err) return t.ifError(err)
+        assert(data.toString(), orig)
+      }))
+  }
+})
