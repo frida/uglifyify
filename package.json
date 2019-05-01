@@ -1,5 +1,5 @@
 {
-  "name": "@vendhq/uglifyify",
+  "name": "@frida/uglifyify",
   "version": "5.1.0",
   "description": "A browserify transform which minifies your code using terser",
   "main": "index.js",
