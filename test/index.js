@@ -112,39 +112,43 @@ test('uglifyify: sourcemaps', function(t) {
   var src  = path.join(__dirname, 'fixture.js')
   var json = path.join(__dirname, 'fixture.json')
   var orig = fs.readFileSync(src, 'utf8')
-  var min  = uglify.minify(orig, {
+  uglify.minify(orig, {
     sourceMap: {
       url: 'out.js.map'
     }
   })
+  .then(min => {
+    var map = convert.fromJSON(min.map)
+    map.setProperty('sources', [src])
+    map.setProperty('sourcesContent', [orig])
 
-  var map = convert.fromJSON(min.map)
-  map.setProperty('sources', [src])
-  map.setProperty('sourcesContent', [orig])
+    var mapped = [orig, map.toComment()].join('\n')
 
-  var mapped = [orig, map.toComment()].join('\n')
+    from2([mapped])
+      .pipe(uglifyify(json))
+      .pipe(bl(doneWithMap))
 
-  from2([mapped])
-    .pipe(uglifyify(json))
-    .pipe(bl(doneWithMap))
+    from2([orig])
+      .pipe(uglifyify(json))
+      .pipe(bl(doneWithoutMap))
 
-  from2([orig])
-    .pipe(uglifyify(json))
-    .pipe(bl(doneWithoutMap))
+    browserify({ entries: [src], debug: true })
+      .transform(uglifyify)
+      .bundle()
+      .pipe(bl(doneWithMap))
 
-  browserify({ entries: [src], debug: true })
-    .transform(uglifyify)
-    .bundle()
-    .pipe(bl(doneWithMap))
+    browserify({ entries: [src], debug: false })
+      .transform(uglifyify)
+      .bundle()
+      .pipe(bl(doneWithoutDebug))
 
-  browserify({ entries: [src], debug: false })
-    .transform(uglifyify)
-    .bundle()
-    .pipe(bl(doneWithoutDebug))
-
-  from2([mapped])
-    .pipe(uglifyify(json, { _flags: { debug: false }}))
-    .pipe(bl(doneWithMapAndNoDebug))
+    from2([mapped])
+      .pipe(uglifyify(json, { _flags: { debug: false }}))
+      .pipe(bl(doneWithMapAndNoDebug))
+  })
+  .catch(err => {
+    t.ifError(err);
+  });
 
   function doneWithMap(err, data) {
     if (err) return t.ifError(err)

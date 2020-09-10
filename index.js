@@ -1,22 +1,22 @@
-var minimatch = require('minimatch').Minimatch
+const minimatch = require('minimatch').Minimatch
   , convert = require('convert-source-map')
   , through = require('through')
   , path = require('path')
-  , ujs = require('terser')
+  , terser = require('terser')
 
 module.exports = uglifyify
 
 function uglifyify(file, opts) {
   opts = opts || {}
 
-  var debug = opts._flags && opts._flags.debug
+  let debug = opts._flags && opts._flags.debug
 
   if (ignore(file, opts.ignore)) {
     return through()
   }
 
-  var buffer = ''
-  var exts = []
+  let buffer = ''
+  const exts = []
     .concat(opts.exts || [])
     .concat(opts.x || [])
     .map(function(d) {
@@ -34,9 +34,9 @@ function uglifyify(file, opts) {
 
   return through(function write(chunk) {
     buffer += chunk
-  }, capture(function ready() {
+  }, capture(async function ready() {
     debug = opts.sourceMap !== false && debug
-    var _opts = Object.assign({}, {
+    const _opts = Object.assign({}, {
       compress: true,
       mangle: true,
       sourceMap: {
@@ -62,19 +62,12 @@ function uglifyify(file, opts) {
     if (debug) _opts.sourceMap.url = 'out.js.map'
 
     // Check if incoming source code already has source map comment.
-    // If so, send it in to ujs.minify as the inSourceMap parameter
+    // If so, send it in to terser.minify as the inSourceMap parameter
     if (debug) {
       _opts.sourceMap.content = 'inline'
     }
 
-    var min = ujs.minify(buffer, _opts)
-
-    // we should catcch the min error if it comes back and end the stream
-    if (min.error) {
-      const err = min.error instanceof Error ? min.error : new Error(min.error.message)
-      // will be emitted by `capture()`
-      throw err
-    }
+    const min = await terser.minify(buffer, _opts)
 
     // Uglify leaves a source map comment pointing back to "out.js.map",
     // which we want to get rid of because it confuses browserify.
@@ -92,11 +85,11 @@ function uglifyify(file, opts) {
   }))
 
   function capture(fn) {
-    return function() {
+    return async function() {
       try {
-        fn.apply(this, arguments)
-      } catch(err) {
-        return this.emit('error', err)
+        await fn.apply(this, arguments)
+      } catch (err) {
+        this.emit('error', err)
       }
     }
   }
