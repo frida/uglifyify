@@ -63,7 +63,7 @@ function uglifyify(file, opts) {
 
     // Check if incoming source code already has source map comment.
     // If so, send it in to terser.minify as the inSourceMap parameter
-    if (debug) {
+    if (debug && buffer.indexOf('//# sourceMappingURL=data:') !== -1) {
       _opts.sourceMap.content = 'inline'
     }
 
