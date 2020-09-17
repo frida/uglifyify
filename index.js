@@ -75,7 +75,7 @@ function uglifyify(file, opts) {
     this.queue(min.code)
 
     if (min.map && min.map !== 'null') {
-      var map = convert.fromJSON(min.map)
+      const map = convert.fromJSON(min.map)
 
       this.queue('\n')
       this.queue(map.toComment())
@@ -101,8 +101,7 @@ function ignore(file, list) {
   list = Array.isArray(list) ? list : [list]
 
   return list.some(function(pattern) {
-    var match = minimatch(pattern)
-    return match.match(file)
+    return minimatch(pattern).match(file)
   })
 }
 
